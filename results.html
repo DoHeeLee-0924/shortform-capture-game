@@ -5,9 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>누적 실험 결과</title>
   <style>
-    body{margin:0;font-family:Arial,sans-serif;background:#f8fafc;color:#0f172a;padding:24px}
-    .wrap{max-width:1180px;margin:0 auto}.card{background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:18px;box-shadow:0 8px 22px rgba(15,23,42,.06);margin-bottom:16px}
-    h1{margin:0 0 12px}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}input{padding:12px;border:1px solid #cbd5e1;border-radius:10px;min-width:260px}button{border:0;border-radius:10px;padding:12px 14px;font-weight:800;color:#fff;background:#2563eb;cursor:pointer}button.secondary{background:#64748b}button.danger{background:#ef4444}.small{font-size:12px;color:#64748b;line-height:1.5}table{width:100%;border-collapse:collapse;background:white;font-size:13px}th,td{border:1px solid #e2e8f0;padding:8px;text-align:left;white-space:nowrap}th{background:#f1f5f9;position:sticky;top:0}#tableWrap{overflow:auto;max-height:68vh;border:1px solid #e2e8f0;border-radius:12px}.stat{display:inline-block;background:#eff6ff;color:#1d4ed8;border-radius:999px;padding:6px 10px;font-weight:800;margin-right:8px}.hidden{display:none}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,'Noto Sans KR',sans-serif;background:#f8fafc;color:#0f172a;padding:24px}
+    .wrap{max-width:1180px;margin:0 auto}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:18px;box-shadow:0 8px 22px rgba(15,23,42,.06);margin-bottom:16px}
+    h1{margin:0 0 12px;font-size:26px} h2{margin:0 0 10px;font-size:18px}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    input{padding:12px;border:1px solid #cbd5e1;border-radius:10px;min-width:260px;font-size:14px}
+    button{border:0;border-radius:10px;padding:12px 14px;font-weight:800;color:#fff;background:#2563eb;cursor:pointer}
+    button.secondary{background:#64748b} button.danger{background:#ef4444} button.warning{background:#f97316}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    .small{font-size:12px;color:#64748b;line-height:1.6}.notice{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.6;margin-top:12px}
+    table{width:100%;border-collapse:collapse;background:white;font-size:13px}
+    th,td{border:1px solid #e2e8f0;padding:8px;text-align:left;white-space:nowrap} th{background:#f1f5f9;position:sticky;top:0;z-index:1}
+    #tableWrap{overflow:auto;max-height:68vh;border:1px solid #e2e8f0;border-radius:12px;background:#fff}
+    .stat{display:inline-block;background:#eff6ff;color:#1d4ed8;border-radius:999px;padding:6px 10px;font-weight:800;margin-right:8px}.hidden{display:none!important}
+    .danger-zone{border-color:#fecaca;background:#fff1f2}.danger-zone h2{color:#b91c1c}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.58);display:flex;align-items:center;justify-content:center;padding:20px;z-index:20}
+    .modal{width:100%;max-width:460px;background:#fff;border-radius:18px;padding:20px;box-shadow:0 20px 40px rgba(0,0,0,.25)}
+    .modal h2{margin:0 0 8px}.modal p{line-height:1.6}.modal .row{justify-content:flex-end;margin-top:14px}
+    code{background:#f1f5f9;border-radius:6px;padding:2px 5px}
   </style>
 </head>
 <body>
@@ -26,32 +43,108 @@
     <p id="status" class="small"></p>
     <div><span id="count" class="stat">0명</span><span id="updated" class="stat hidden"></span></div>
   </div>
+
+  <div class="card danger-zone">
+    <h2>실험 데이터 초기화</h2>
+    <p class="small">
+      로컬 데이터 초기화는 현재 브라우저에 저장된 임시 결과만 삭제합니다.<br>
+      온라인 데이터 전체 삭제는 Google Sheet의 <code>responses</code> 시트에서 참가자 행을 삭제하는 기능입니다.
+    </p>
+    <div class="row">
+      <button id="clearLocalBtn" class="warning">로컬 데이터 초기화</button>
+      <button id="clearOnlineBtn" class="danger">온라인 실험 데이터 전체 삭제</button>
+    </div>
+    <div class="notice">
+      온라인 삭제 버튼이 <b>invalid action</b>으로 실패하면, 현재 Apps Script가 삭제 기능을 아직 지원하지 않는 상태입니다. 이 경우 <code>google_apps_script.gs</code>에 <code>action=clear</code> 기능도 추가해야 실제 Google Sheet 데이터 삭제가 됩니다.
+    </div>
+  </div>
+
   <div id="tableWrap"><table id="resultTable"><thead></thead><tbody></tbody></table></div>
 </div>
+
+<div id="confirmModal" class="modal-backdrop hidden">
+  <div class="modal">
+    <h2>온라인 실험 데이터를 삭제할까요?</h2>
+    <p>
+      Google Sheet의 누적 실험 데이터가 삭제됩니다. 보통 1행 컬럼명은 유지하고, 2행 이후 참가자 응답만 삭제합니다.<br><br>
+      계속하려면 아래 입력창에 <b>DELETE</b>를 입력하세요.
+    </p>
+    <input id="deleteConfirmText" placeholder="DELETE 입력" style="width:100%;min-width:0" />
+    <div class="row">
+      <button id="cancelDeleteBtn" class="secondary">취소</button>
+      <button id="confirmDeleteBtn" class="danger">삭제 실행</button>
+    </div>
+  </div>
+</div>
+
 <script src="config.js"></script>
 <script>
 const RESULTS_STORAGE_KEY='shortform_capture_game_participant_results_v2';
 let rows=[];
 const $=id=>document.getElementById(id);
 $('endpoint').value=(window.EXPERIMENT_CONFIG&&window.EXPERIMENT_CONFIG.DATA_ENDPOINT)||'';
+
 function csvEscape(v){return `"${String(v??'').replaceAll('"','""')}"`}
 function toCSV(data){if(!data.length)return 'no_data\n'; const headers=Object.keys(data[0]); return [headers.join(','),...data.map(r=>headers.map(h=>csvEscape(r[h])).join(','))].join('\n')}
 function download(name,content,type){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url)}
 function render(data){rows=data||[];$('count').textContent=`${rows.length}명`;const table=$('resultTable');const thead=table.querySelector('thead');const tbody=table.querySelector('tbody');thead.innerHTML='';tbody.innerHTML='';if(!rows.length){$('status').textContent='표시할 데이터가 없습니다.';return}const headers=Object.keys(rows[0]);thead.innerHTML='<tr>'+headers.map(h=>`<th>${h}</th>`).join('')+'</tr>';tbody.innerHTML=rows.map(r=>'<tr>'+headers.map(h=>`<td>${String(r[h]??'')}</td>`).join('')+'</tr>').join('');$('status').textContent='결과를 불러왔습니다.'}
 function getLocal(){try{return JSON.parse(localStorage.getItem(RESULTS_STORAGE_KEY)||'[]')}catch(e){return []}}
+function setStatus(msg){$('status').textContent=msg}
+
+function jsonpRequest(action, extraParams, onDone){
+  const endpoint=$('endpoint').value.trim(); const token=$('token').value.trim();
+  if(!endpoint||!token){setStatus('Web App URL과 관리자 토큰을 입력하세요.');return}
+  const cb='jsonp_'+Date.now()+'_'+Math.floor(Math.random()*10000);
+  const script=document.createElement('script');
+  window[cb]=(payload)=>{try{delete window[cb]}catch(e){}; script.remove(); onDone(payload||{});};
+  script.onerror=()=>{try{delete window[cb]}catch(e){}; script.remove(); setStatus('요청 실패: URL 또는 배포 설정을 확인하세요.');};
+  const params=new URLSearchParams({action,token,callback:cb,...(extraParams||{})});
+  script.src=endpoint+(endpoint.includes('?')?'&':'?')+params.toString();
+  document.body.appendChild(script);
+}
+
 $('localBtn').onclick=()=>render(getLocal());
 $('csvBtn').onclick=()=>download('participant_results_accumulated.csv',toCSV(rows),'text/csv;charset=utf-8');
 $('jsonBtn').onclick=()=>download('participant_results_accumulated.json',JSON.stringify(rows,null,2),'application/json');
 $('loadBtn').onclick=()=>{
+  setStatus('불러오는 중...');
+  jsonpRequest('list',{},payload=>{
+    if(payload&&payload.ok){render(payload.rows||[]);$('updated').classList.remove('hidden');$('updated').textContent='온라인 데이터';}
+    else setStatus('불러오기 실패: '+(payload&&payload.error?payload.error:'알 수 없는 오류'));
+  });
+};
+
+$('clearLocalBtn').onclick=()=>{
+  if(!confirm('현재 브라우저에 저장된 로컬 실험 결과를 삭제할까요? Google Sheet 데이터는 삭제되지 않습니다.')) return;
+  localStorage.removeItem(RESULTS_STORAGE_KEY);
+  render([]);
+  setStatus('로컬 데이터가 초기화되었습니다. 온라인 Google Sheet 데이터는 그대로 유지됩니다.');
+};
+
+$('clearOnlineBtn').onclick=()=>{
   const endpoint=$('endpoint').value.trim(); const token=$('token').value.trim();
-  if(!endpoint||!token){$('status').textContent='Web App URL과 관리자 토큰을 입력하세요.';return}
-  const cb='jsonp_'+Date.now();
-  window[cb]=(payload)=>{try{delete window[cb]}catch(e){}; script.remove(); if(payload&&payload.ok){render(payload.rows||[]);$('updated').classList.remove('hidden');$('updated').textContent=`온라인 데이터`; }else{$('status').textContent='불러오기 실패: '+(payload&&payload.error?payload.error:'알 수 없는 오류')}};
-  const script=document.createElement('script');
-  script.onerror=()=>{$('status').textContent='불러오기 실패: URL 또는 배포 설정을 확인하세요.'};
-  script.src=endpoint+(endpoint.includes('?')?'&':'?')+'action=list&token='+encodeURIComponent(token)+'&callback='+cb;
-  document.body.appendChild(script);
-  $('status').textContent='불러오는 중...';
+  if(!endpoint||!token){setStatus('온라인 데이터를 삭제하려면 Web App URL과 관리자 토큰을 먼저 입력하세요.');return}
+  $('deleteConfirmText').value='';
+  $('confirmModal').classList.remove('hidden');
+};
+$('cancelDeleteBtn').onclick=()=>$('confirmModal').classList.add('hidden');
+$('confirmDeleteBtn').onclick=()=>{
+  if($('deleteConfirmText').value.trim()!=='DELETE'){
+    alert('DELETE를 정확히 입력해야 삭제할 수 있습니다.');
+    return;
+  }
+  $('confirmModal').classList.add('hidden');
+  setStatus('온라인 데이터 삭제 요청 중...');
+  jsonpRequest('clear',{},payload=>{
+    if(payload&&payload.ok){
+      render([]);
+      $('updated').classList.remove('hidden');
+      $('updated').textContent='온라인 데이터 삭제 완료';
+      setStatus(`온라인 실험 데이터가 삭제되었습니다. 삭제 행 수: ${payload.deleted_rows??0}`);
+    }else{
+      setStatus('온라인 삭제 실패: '+(payload&&payload.error?payload.error:'알 수 없는 오류')+' / Apps Script에 clear 기능이 없으면 google_apps_script.gs 업데이트가 필요합니다.');
+    }
+  });
 };
 </script>
 </body>
