@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>숏폼 종료 유도 실험 - 포획 게임</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,sans-serif;background:#f8fafc;color:#111}.hidden{display:none!important}
+    #app{width:100%;max-width:480px;margin:0 auto;min-height:100dvh;background:#fff;position:relative;overflow:hidden}.screen{padding:20px 18px 28px;min-height:100dvh}.card{background:#fff;border:1px solid #e8e8e8;border-radius:16px;padding:16px;box-shadow:0 8px 20px rgba(0,0,0,.06)}
+    label{display:block;margin-bottom:6px;font-size:14px;font-weight:700}input,select{width:100%;padding:12px;border:1px solid #d8dce3;border-radius:10px;font-size:15px;margin-bottom:14px;background:#fff}.btn{border:0;background:#2563eb;color:white;padding:12px 16px;border-radius:12px;font-size:15px;font-weight:800;cursor:pointer}.btn.full{width:100%}.btn.danger{background:#ef4444}.btn.secondary{background:#64748b}.btn.green{background:#16a34a}
+    .header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px}.header h2{margin:0;font-size:18px;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.35)}.sub{color:#f1f5f9;font-size:13px;margin-top:4px;text-shadow:0 2px 8px rgba(0,0,0,.35)}#gameScreen{padding:0;min-height:100dvh}#hudTop{position:relative;z-index:6}#statsBar{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:10px 0 10px}.stat-box{background:rgba(255,255,255,.72);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.55);border-radius:16px;padding:10px 12px;box-shadow:0 8px 20px rgba(0,0,0,.08)}.stat-title{font-size:12px;color:#475569;margin-bottom:6px}.stat-value{font-size:18px;font-weight:800;color:#0f172a}
+    #gestureGuide{text-align:center;margin:6px 0 12px;font-weight:900;color:#fff;min-height:24px;text-shadow:0 2px 8px rgba(0,0,0,.35)}#playArea{position:relative;user-select:none;touch-action:none;height:100dvh;min-height:100dvh;background-image:linear-gradient(rgba(15,23,42,.1),rgba(15,23,42,.24)),url('assets/field_bg.jpg');background-size:cover;background-position:center;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;padding:calc(12px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom))}#playArea:before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.08) 0%,rgba(255,255,255,.02) 38%,rgba(15,23,42,.1) 100%);pointer-events:none}#monsterCard{position:relative;min-height:380px;border-radius:22px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:transparent;border:none;padding:0}#monsterImg{width:clamp(180px,58vw,250px);max-width:88%;height:clamp(180px,58vw,250px);object-fit:contain;pointer-events:none;opacity:0;transform:scale(.7);transition:opacity .25s ease, transform .25s ease;filter:drop-shadow(0 18px 18px rgba(0,0,0,.18))}#monsterImg.revealed{opacity:1;transform:scale(1)}#monsterName{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);padding:10px 16px;border-radius:999px;background:rgba(255,255,255,.9);font-size:20px;font-weight:900;color:#0f172a;opacity:0;transition:opacity .25s ease}.show-meta#monsterName{opacity:1}#rarityBadge{position:absolute;top:18px;left:50%;transform:translateX(-50%);padding:8px 12px;border-radius:999px;font-size:12px;font-weight:900;background:rgba(255,255,255,.9);color:#0f172a;opacity:0;transition:opacity .25s ease}.show-meta#rarityBadge{opacity:1}#resultText{text-align:center;min-height:40px;font-size:19px;font-weight:900;margin-top:8px;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.3)}#swipeHint{text-align:center;color:#e2e8f0;font-size:14px;margin-bottom:10px;font-weight:700;text-shadow:0 1px 5px rgba(0,0,0,.35)}#ballZone{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:3}#pokeball{width:clamp(120px,42vw,170px);height:clamp(120px,42vw,170px);object-fit:contain;display:block;pointer-events:none;filter:drop-shadow(0 18px 18px rgba(0,0,0,.24))}.ball-rest{transform:translateY(18px) scale(1)}.ball-after-throw{opacity:0}.ball-shake{animation:ballShake .72s ease-in-out}.micro-note{text-align:center;font-size:12px;color:#e2e8f0;margin-top:6px;text-shadow:0 1px 5px rgba(0,0,0,.35)}.pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#e0f2fe;color:#0369a1;font-size:12px;font-weight:800;margin:4px 0 8px}.notice{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:12px;line-height:1.55;margin:12px 0}.encounter-glow{position:absolute;inset:0;background:radial-gradient(circle at center,rgba(255,255,255,.35) 0%,rgba(255,255,255,0) 60%);opacity:0;transition:opacity .2s ease;pointer-events:none}.encounter-glow.active{opacity:1}.sparkle-layer{position:absolute;inset:0;pointer-events:none;z-index:4;opacity:0}.sparkle-layer.active{opacity:1}.spark{position:absolute;width:14px;height:14px;background:radial-gradient(circle,#fff 0%,#fff7 35%,#ffffff00 70%);animation:sparkle 1s ease-out forwards}.rare-ring{position:absolute;inset:50% auto auto 50%;width:30px;height:30px;border:3px solid rgba(255,244,140,.9);border-radius:50%;transform:translate(-50%,-50%);opacity:0;pointer-events:none;z-index:4}.rare-ring.active{animation:rareRing 1.2s ease-out}.condition-diff{margin-top:10px;background:#f8fafc;border-radius:12px;padding:12px 14px;text-align:left;line-height:1.6;color:#334155}.condition-diff b{color:#0f172a}.hud-panel{padding-top:2px}.top-exit{background:rgba(239,68,68,.9);backdrop-filter:blur(6px);box-shadow:0 8px 18px rgba(0,0,0,.14);padding:10px 14px;border-radius:16px;white-space:nowrap;flex-shrink:0}#playContent{flex:1;display:flex;flex-direction:column;justify-content:center}#monsterCard{min-height:42dvh}.bottom-ui{position:relative;z-index:6;padding-bottom:4px}.overlay-card .btn{margin-top:10px}@keyframes ballShake{0%,100%{transform:translateY(18px) rotate(0)}15%{transform:translateY(18px) rotate(-16deg)}30%{transform:translateY(18px) rotate(12deg)}45%{transform:translateY(18px) rotate(-10deg)}60%{transform:translateY(18px) rotate(8deg)}75%{transform:translateY(18px) rotate(-6deg)}}@keyframes sparkle{0%{opacity:0;transform:scale(.2)}25%{opacity:1}100%{opacity:0;transform:translateY(-18px) scale(1.8)}}@keyframes rareRing{0%{opacity:.95;transform:translate(-50%,-50%) scale(.4)}100%{opacity:0;transform:translate(-50%,-50%) scale(8)}}
+    .overlay{position:absolute;inset:0;background:rgba(15,23,42,.72);display:flex;justify-content:center;align-items:center;z-index:4;padding:20px}.overlay-card{width:100%;max-width:360px;background:white;border-radius:18px;padding:22px 18px;text-align:center;box-shadow:0 14px 28px rgba(0,0,0,.22)}.spinner{width:42px;height:42px;margin:0 auto 14px;border:4px solid #cbd5e1;border-top-color:#2563eb;border-radius:50%;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.summary-box{margin-top:14px;background:#f8fafc;border-radius:12px;padding:12px;text-align:left;font-size:14px;line-height:1.6}.row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}.row .btn{flex:1}.small{font-size:12px;color:#64748b}.step-list{padding-left:18px;line-height:1.7}.countdown-text{font-weight:800;color:#1d4ed8;margin-top:8px}.dex-preview{margin:12px 0 4px;text-align:left}.dex-preview-title{font-size:13px;font-weight:800;color:#334155;margin-bottom:8px}.dex-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.dex-item{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:6px;text-align:center}.dex-item img{width:100%;aspect-ratio:1/1;object-fit:contain}.dex-item-name{font-size:10px;font-weight:700;color:#334155;line-height:1.2;margin-top:4px}.dex-total-count{background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:10px 12px;margin:10px 0 12px;text-align:center;font-weight:900;color:#1d4ed8}.dex-section-title{font-size:13px;font-weight:900;color:#0f172a;margin:12px 0 8px}
+
+    .ball-throw{animation:ballThrow .55s ease-out}
+    @keyframes ballThrow{0%{transform:translateY(0) scale(1)}45%{transform:translateY(-230px) scale(.72) rotate(280deg)}100%{transform:translateY(0) scale(1) rotate(360deg)}}
+    .monster-pop{animation:monsterPop .38s ease-out}
+    @keyframes monsterPop{0%{transform:scale(.92);filter:brightness(1)}55%{transform:scale(1.08);filter:brightness(1.18)}100%{transform:scale(1);filter:brightness(1)}}@keyframes rarePop{0%{transform:scale(.35) rotate(-12deg);filter:brightness(1.25) saturate(1.35)}55%{transform:scale(1.22) rotate(6deg);filter:brightness(1.35) saturate(1.5)}100%{transform:scale(1) rotate(0);filter:brightness(1) saturate(1)}}
+    .shake{animation:shake .28s ease-in-out}
+    @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+    .reward-chip{display:inline-block;margin:6px 4px 0;padding:5px 9px;border-radius:999px;background:#fff7ed;color:#c2410c;font-size:12px;font-weight:900;border:1px solid #fed7aa}
+    .combo-burst{position:absolute;right:16px;top:60px;background:#111827;color:white;border-radius:999px;padding:8px 12px;font-weight:900;font-size:13px;box-shadow:0 10px 22px rgba(0,0,0,.18);animation:floatUp .75s ease-out forwards;z-index:5}
+    @keyframes floatUp{0%{opacity:0;transform:translateY(12px) scale(.9)}25%{opacity:1}100%{opacity:0;transform:translateY(-20px) scale(1.05)}}
+    .rarity-glow{box-shadow:0 0 0 3px rgba(250,204,21,.35),0 14px 35px rgba(250,204,21,.25)}
+  </style>
+</head>
+<body><div id="app">
+<section id="startScreen" class="screen">
+  <h1>포획 게임 기반 숏폼 종료 실험</h1>
+  <p>1단계를 먼저 수행한 뒤, 2단계는 3가지 방식 중 하나가 랜덤으로 배정되어 이어서 수행됩니다. 그만하고 싶을 때는 종료 버튼을 눌러 다음 단계로 이동할 수 있습니다.</p>
+  <div class="notice">
+    <b>진행 순서</b>
+    <ol class="step-list">
+      <li>1단계: 기본 포획 게임</li>
+      <li>1단계 진행 후 사후 설문</li>
+      <li>2단계: 3가지 방식 중 1개 랜덤 배정</li>
+      <li>2단계 진행 후 사후 설문</li>
+      <li>실험 종료 및 결과 자동 저장</li>
+    </ol>
+  </div>
+  <div class="card">
+    <form id="startForm">
+      <label>참가자 ID</label>
+      <input id="participantId" placeholder="예: P01" required>
+      <button class="btn full">실험 시작</button>
+    </form>
+  </div>
+  <p class="small" style="margin-top:16px">조작: 화면 안내에 따라 포켓볼을 스와이프해서 던지면 됩니다.</p>
+</section>
+
+<section id="gameScreen" class="screen hidden">
+  <div id="playArea">
+    <div id="hudTop" class="hud-panel">
+      <div class="header"><div><h2>포획 실험</h2><div class="sub" id="conditionLabel"></div></div><button id="endBtn" class="btn danger top-exit">종료하기</button></div>
+      <div id="statsBar"></div>
+      <div id="gestureGuide"></div>
+    </div>
+    <div id="playContent">
+      <div>
+        <div id="monsterCard">
+          <div class="encounter-glow" id="encounterGlow"></div><div class="sparkle-layer" id="sparkleLayer"></div><div class="rare-ring" id="rareRing"></div>
+          <div id="rarityBadge">COMMON</div>
+          <img id="monsterImg" alt="captured pokemon">
+          <div id="monsterName">몬스터</div>
+          <div id="ballZone">
+            <img id="pokeball" class="ball-rest" src="assets/pokeball.png" alt="pokeball">
+          </div>
+        </div>
+        <div id="resultText"></div>
+      </div>
+    </div>
+    <div class="bottom-ui">
+      <div id="swipeHint">크게 놓인 포켓볼을 스와이프해서 던지세요</div>
+      <div class="micro-note">그만하고 싶을 때 종료 버튼을 누르세요.</div>
+    </div>
+  </div>
+</section>
+
+<div id="frictionOverlay" class="overlay hidden"><div class="overlay-card"><div class="spinner"></div><h3>포켓볼 충전 중...</h3><p>잠시만 기다려 주세요.</p><div id="frictionCountdown" class="countdown-text">1.5초 후 게임이 다시 진행됩니다</div></div></div>
+
+<div id="transitionModal" class="overlay hidden"><div class="overlay-card">
+  <div class="pill">1단계 완료</div>
+  <h3>1단계가 끝났습니다</h3>
+  <p id="assignedText">이제 랜덤 배정된 2단계를 진행합니다.</p>
+  <div id="conditionDiff" class="condition-diff"></div>
+  <button id="nextBlockBtn" class="btn full green">2단계 시작하기</button>
+</div></div>
+
+<div id="totalDexModal" class="overlay hidden"><div class="overlay-card" style="text-align:left">
+  <h3 style="text-align:center">도감 획득 결과</h3>
+  <div id="totalDexResult"></div>
+  <button id="goSurveyBtn" class="btn full green">설문으로 이동</button>
+</div></div>
+
+<div id="surveyModal" class="overlay hidden"><div class="overlay-card" style="text-align:left">
+  <h3 id="surveyTitle" style="text-align:center">실험 종료</h3>
+  <div id="capturedDexPreview" class="dex-preview hidden"></div>
+  <form id="surveyForm">
+    <label>몇 분 정도 플레이했다고 생각하나요?</label><input type="number" id="perceivedTime" min="0" step="0.1" required>
+    <label>몇 번 정도 포획했다고 생각하나요?</label><input type="number" id="perceivedThrows" min="0" step="1" required>
+    <label>원할 때 쉽게 종료할 수 있었다</label><select id="easyToStop" required><option value="">선택</option><option value="매우 그렇다">매우 그렇다</option><option value="그렇다">그렇다</option><option value="보통이다">보통이다</option><option value="그렇지 않다">그렇지 않다</option><option value="매우 그렇지 않다">매우 그렇지 않다</option></select>
+    <button class="btn full">설문 제출</button>
+  </form>
+  <div id="summaryArea" class="hidden"><div id="summaryBox" class="summary-box"></div><div id="saveStatus" class="small" style="margin-top:10px"></div></div>
+</div></div>
+
+<section id="completionScreen" class="screen hidden">
+  <div class="card">
+    <h1>실험이 종료되었습니다</h1>
+    <p>설문 응답이 완료되었고, 결과 데이터가 자동 저장·전송됩니다.</p>
+    <div id="participantSummaryBox" class="summary-box"></div>
+    <div id="participantSaveStatus" class="small" style="margin-top:10px">데이터 전송 준비 중...</div>
+    <div class="row">
+      <button id="closeExperimentBtn" class="btn full green">종료하기</button>
+    </div>
+    <p class="small" id="closeHelpText" style="margin-top:10px">창이 닫히지 않으면 브라우저의 뒤로가기 또는 탭 닫기를 눌러 주세요.</p>
+  </div>
+</section>
+</div>
+
+<script src="config.js"></script>
+<script>
+const MAX_THROWS=30;
+const FINAL_CATCH_TRIAL=30;
+const CONTROL_MONSTERS=[{id:'charmander',name:'Charmander',img:'assets/charmander.png',rarity:'UNCOMMON',catchRate:.62,weight:24},{id:'pikachu',name:'Pikachu',img:'assets/pikachu.png',rarity:'RARE',catchRate:.45,weight:12},{id:'jigglypuff',name:'Jigglypuff',img:'assets/jigglypuff.png',rarity:'RARE',catchRate:.5,weight:14},{id:'bulbasaur',name:'Bulbasaur',img:'assets/bulbasaur.png',rarity:'COMMON',catchRate:.72,weight:28},{id:'squirtle',name:'Squirtle',img:'assets/squirtle.png',rarity:'COMMON',catchRate:.7,weight:22}];
+const EXPERIMENT_MONSTERS=[{id:'butterfree',name:'Butterfree',img:'assets/butterfree.png',rarity:'UNCOMMON',catchRate:.62,weight:24},{id:'caterpie',name:'Caterpie',img:'assets/caterpie.png',rarity:'COMMON',catchRate:.72,weight:28},{id:'blastoise',name:'Blastoise',img:'assets/blastoise.png',rarity:'RARE',catchRate:.44,weight:12},{id:'ditto',name:'Ditto',img:'assets/ditto.png',rarity:'RARE',catchRate:.48,weight:14},{id:'magikarp',name:'Magikarp',img:'assets/magikarp.png',rarity:'COMMON',catchRate:.74,weight:22}];
+const names={control:'기본 포획',awareness:'B. Awareness Cue',friction:'C. Friction UI',pattern:'D. Pattern Breaker'};
+const experimentalConditions=['awareness','friction','pattern'];
+let experiment=null,session=null,timer=null,startPt=null;
+let finalResultSaved=false;
+const CONFIG=window.EXPERIMENT_CONFIG||{};
+const RESULTS_STORAGE_KEY='shortform_capture_game_participant_results_v2';
+const $=id=>document.getElementById(id);
+function now(){return new Date().toISOString()}
+function elapsed(){return session?((Date.now()-session.startTime)/1000):0}
+function shuffle(arr){const a=[...arr];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function generateCatchTrials(){const pool=[];for(let i=2;i<FINAL_CATCH_TRIAL;i++)pool.push(i);return shuffle(pool).slice(0,4).sort((a,b)=>a-b).concat(FINAL_CATCH_TRIAL)}
+function randomExperimental(){return experimentalConditions[Math.floor(Math.random()*experimentalConditions.length)]}
+function initExperiment(participantId){finalResultSaved=false;const assigned=randomExperimental();experiment={participantId,assignedExperiment:assigned,blockOrder:['control',assigned],currentBlockIndex:0,startedAt:now(),endedAt:null,blockSummaries:[],allEvents:[]}}
+function initBlock(condition){const monstersPool=condition==='control'?CONTROL_MONSTERS:EXPERIMENT_MONSTERS;session={participantId:experiment.participantId,condition,phase:condition==='control'?'control':'experiment',blockIndex:experiment.currentBlockIndex+1,blockLabel:experiment.currentBlockIndex===0?'control_first':'random_experiment_second',startedAt:now(),startTime:Date.now(),ended:false,totalThrows:0,caughtCount:0,collectionSet:new Set(),streak:0,finalStreak:0,currentMonster:null,requiredGesture:'up',awaiting:false,locked:false,events:[],survey:null,earlyExitClicks:0,catchOrder:shuffle(monstersPool),monstersPool,catchTrials:generateCatchTrials(),frictionTimeout:null,frictionInterval:null}}
+function startBlock(){const condition=experiment.blockOrder[experiment.currentBlockIndex];initBlock(condition);$('startScreen').classList.add('hidden');$('surveyModal').classList.add('hidden');$('transitionModal').classList.add('hidden');$('totalDexModal').classList.add('hidden');$('summaryArea').classList.add('hidden');$('surveyForm').classList.remove('hidden');hideCapturedDexPreview();$('completionScreen').classList.add('hidden');$('gameScreen').classList.remove('hidden');$('conditionLabel').textContent=`${session.blockIndex}단계 · ${names[condition]}`;resetEncounterStage();timer=setInterval(()=>{if(session.condition==='awareness')renderStats()},300);nextMonster()}
+function renderStats(){let html=`<div class="stat-box"><div class="stat-title">현재 단계</div><div class="stat-value">${session.blockIndex}단계</div></div><div class="stat-box"><div class="stat-title">도감 진행률</div><div class="stat-value">${session.collectionSet.size}/${session.monstersPool.length}</div></div>`;if(session.condition==='awareness')html+=`<div class="stat-box"><div class="stat-title">플레이 시간</div><div class="stat-value">${elapsed().toFixed(1)}초</div></div><div class="stat-box"><div class="stat-title">포획 시도</div><div class="stat-value">${session.totalThrows}</div></div><div class="stat-box"><div class="stat-title">포획 성공</div><div class="stat-value">${session.caughtCount}</div></div>`;$('statsBar').innerHTML=html;$('conditionLabel').textContent=`${session.blockIndex}단계 · ${names[session.condition]}`}
+function scheduledMonsterForTrial(trial){const idx=session.catchTrials.indexOf(trial);return idx>=0?session.catchOrder[idx]:null}
+function pickDisplayMonster(){const nextTrial=session.totalThrows+1;const scheduled=scheduledMonsterForTrial(nextTrial);if(scheduled)return scheduled;const pool=session.catchOrder.slice(0,Math.max(1,session.collectionSet.size+1));return pool[Math.floor(Math.random()*pool.length)]}
+function nextMonster(){if(session.ended)return;if(session.totalThrows>=MAX_THROWS||session.collectionSet.size>=session.monstersPool.length){finish(true);return}session.currentMonster=pickDisplayMonster();session.requiredGesture=getRequiredGestureForNextAttempt();resetEncounterStage();$('gestureGuide').textContent=session.requiredGesture==='right'?'오른쪽으로 커브볼! →':'위로 스와이프! ↑';$('swipeHint').textContent=session.requiredGesture==='right'?'오른쪽으로 크게 스와이프해서 포켓볼 던지기':'위로 크게 스와이프해서 포켓볼 던지기';$('resultText').textContent='';session.awaiting=true;renderStats()}
+function direction(a,b){const dx=b.x-a.x,dy=b.y-a.y,ax=Math.abs(dx),ay=Math.abs(dy);if(ax<30&&ay<30)return null;if(ay>ax&&dy<-40)return'up';if(ax>ay&&dx>40)return'right';if(ax>ay&&dx<-40)return'left';return null}
+function getRequiredGestureForNextAttempt(){
+  if(!session||session.condition!=='pattern') return 'up';
+  const nextAttempt=session.totalThrows+1;
+  const block=Math.floor((nextAttempt-1)/5);
+  return block%2===0?'up':'right';
+}
+function gestureLabel(g){return g==='right'?'오른쪽':g==='left'?'왼쪽':'위쪽'}
+function flashCombo(text){
+  const area=$('playArea');
+  const chip=document.createElement('div');
+  chip.className='combo-burst';
+  chip.textContent=text;
+  area.appendChild(chip);
+  setTimeout(()=>chip.remove(),800);
+}
+function playBallShake(){
+  const ball=$('pokeball');
+  ball.classList.remove('ball-shake');
+  void ball.offsetWidth;
+  ball.classList.add('ball-shake');
+  setTimeout(()=>ball.classList.remove('ball-shake'),760);
+}
+function triggerSparkles(isRare=false){
+  const layer=$('sparkleLayer');
+  layer.innerHTML='';
+  const count=isRare?18:10;
+  for(let i=0;i<count;i++){
+    const s=document.createElement('div');
+    s.className='spark';
+    s.style.left=(18+Math.random()*64)+'%';
+    s.style.top=(18+Math.random()*54)+'%';
+    s.style.animationDelay=(Math.random()*0.22)+'s';
+    s.style.width=s.style.height=(isRare?12+Math.random()*12:10+Math.random()*8)+'px';
+    layer.appendChild(s);
+  }
+  layer.classList.add('active');
+  setTimeout(()=>{layer.classList.remove('active'); layer.innerHTML='';},1200);
+}
+function triggerRareShow(){
+  const rr=$('rareRing');
+  rr.classList.remove('active');
+  void rr.offsetWidth;
+  rr.classList.add('active');
+  setTimeout(()=>rr.classList.remove('active'),1200);
+}
+function experimentalDiffHtml(cond){
+  if(cond==='awareness') return '<b>이전과 달라진 점</b><br>• 2단계에서는 <b>새로운 포켓몬 5종</b>으로 도감이 바뀝니다.<br>• 상단에 <b>플레이 시간</b>, <b>포획 시도</b>, <b>포획 성공</b> 정보가 계속 표시됩니다.<br>• 얼마나 오래/많이 했는지 더 쉽게 인식할 수 있습니다.';
+  if(cond==='friction') return '<b>이전과 달라진 점</b><br>• 2단계에서는 <b>새로운 포켓몬 5종</b>이 등장합니다.<br>• 진행 중 일정 간격마다 <b>짧은 멈춤 화면</b>이 나타납니다.<br>• 멈춤 화면에는 다시 진행되기까지 남은 시간이 표시됩니다.';
+  if(cond==='pattern') return '<b>이전과 달라진 점</b><br>• 2단계에서는 <b>새로운 포켓몬 5종</b>이 등장합니다.<br>• 조작 방식이 바뀝니다.<br>• <b>5번은 위로</b>, 다음 <b>5번은 오른쪽으로</b> 스와이프해야 하며, 맞는 방향으로 해야만 포획 시도로 인정됩니다.';
+  return '';
+}
+function renderCapturedDexPreview(){
+  const box=$('capturedDexPreview');
+  if(!session||session.phase!=='experiment'){box.classList.add('hidden'); box.innerHTML=''; return}
+  const owned=session.catchOrder.filter(m=>session.collectionSet.has(m.id));
+  box.innerHTML=`<div class="dex-preview-title">이번 2단계에서 획득한 도감</div><div class="dex-grid">${owned.map(m=>`<div class="dex-item"><img src="${m.img}" alt="${m.name}"><div class="dex-item-name">${m.name}</div></div>`).join('')}</div>`;
+  box.classList.remove('hidden');
+}
+function hideCapturedDexPreview(){ $('capturedDexPreview').classList.add('hidden'); $('capturedDexPreview').innerHTML=''; }
+function dexGridHtml(monsters, ownedIds){
+  return `<div class="dex-grid">${monsters.map(m=>{const owned=ownedIds.includes(m.id);return `<div class="dex-item" style="${owned?'':'opacity:.35;filter:grayscale(1)'}"><img src="${m.img}" alt="${m.name}"><div class="dex-item-name">${owned?m.name:'미획득'}</div></div>`}).join('')}</div>`;
+}
+function renderTotalDexResult(){
+  const stage1=experiment.blockSummaries[0]||{};
+  const stage1Ids=stage1.captured_ids||[];
+  const stage2Ids=session?Array.from(session.collectionSet):[];
+  const totalOwned=stage1Ids.length+stage2Ids.length;
+  const totalPossible=CONTROL_MONSTERS.length+EXPERIMENT_MONSTERS.length;
+  $('totalDexResult').innerHTML=`
+    <div class="dex-total-count">총 획득 도감: ${totalOwned}/${totalPossible}</div>
+    <div class="dex-section-title">1단계 획득 도감 ${stage1Ids.length}/${CONTROL_MONSTERS.length}</div>
+    ${dexGridHtml(CONTROL_MONSTERS,stage1Ids)}
+    <div class="dex-section-title">2단계 획득 도감 ${stage2Ids.length}/${EXPERIMENT_MONSTERS.length}</div>
+    ${dexGridHtml(EXPERIMENT_MONSTERS,stage2Ids)}
+  `;
+}
+function showSurveyAfterDexResult(){
+  $('totalDexModal').classList.add('hidden');
+  hideCapturedDexPreview();
+  $('surveyModal').classList.remove('hidden');
+}
+
+function clearFrictionTimers(){
+  if(!session) return;
+  if(session.frictionTimeout){clearTimeout(session.frictionTimeout); session.frictionTimeout=null}
+  if(session.frictionInterval){clearInterval(session.frictionInterval); session.frictionInterval=null}
+}
+function startFrictionPause(){
+  session.locked=true;
+  let remaining=1.5;
+  $('frictionCountdown').textContent=`${remaining.toFixed(1)}초 후 게임이 다시 진행됩니다`;
+  $('frictionOverlay').classList.remove('hidden');
+  clearFrictionTimers();
+  session.frictionInterval=setInterval(()=>{remaining=Math.max(0,remaining-0.1); $('frictionCountdown').textContent=`${remaining.toFixed(1)}초 후 게임이 다시 진행됩니다`;},100);
+  session.frictionTimeout=setTimeout(()=>{clearFrictionTimers(); if(!session||session.ended) return; session.locked=false; $('frictionOverlay').classList.add('hidden'); nextMonster();},1500);
+}
+
+function resetEncounterStage(){
+  $('monsterImg').classList.remove('revealed','monster-pop');
+  $('monsterName').classList.remove('show-meta');
+  $('rarityBadge').classList.remove('show-meta');
+  $('encounterGlow').classList.remove('active');
+  $('sparkleLayer').classList.remove('active');
+  $('sparkleLayer').innerHTML='';
+  $('rareRing').classList.remove('active');
+  $('monsterImg').src='';
+  $('monsterName').textContent='';
+  $('rarityBadge').textContent='';
+  $('pokeball').classList.remove('ball-after-throw');
+  $('pokeball').classList.add('ball-rest');
+}
+function revealCaughtMonster(monster){
+  $('monsterImg').src=monster.img;
+  $('monsterName').textContent=monster.name;
+  $('rarityBadge').textContent=monster.rarity;
+  $('rarityBadge').style.background=monster.rarity==='COMMON'?'rgba(209,250,229,.95)':monster.rarity==='UNCOMMON'?'rgba(219,234,254,.95)':'rgba(250,232,255,.95)';
+  $('rarityBadge').style.color=monster.rarity==='COMMON'?'#065f46':monster.rarity==='UNCOMMON'?'#1d4ed8':'#86198f';
+  $('monsterImg').classList.add('revealed');
+  $('monsterName').classList.add('show-meta');
+  $('rarityBadge').classList.add('show-meta');
+  $('encounterGlow').classList.add('active');
+  triggerSparkles(monster.rarity==='RARE');
+  if(monster.rarity==='RARE') triggerRareShow();
+}
+function animateThrow(){
+  const ball=$('pokeball');
+  ball.classList.remove('ball-throw','ball-after-throw');
+  void ball.offsetWidth;
+  ball.classList.add('ball-throw');
+  setTimeout(()=>{ball.classList.remove('ball-throw');ball.classList.add('ball-after-throw')},540);
+}
+function animateMonster(cls){
+  const card=$('monsterCard');
+  const img=$('monsterImg');
+  card.classList.remove('monster-pop','shake','rarity-glow');
+  img.style.animation='';
+  void card.offsetWidth;
+  card.classList.add(cls);
+  if(session&&session.currentMonster&&session.currentMonster.rarity==='RARE'){ card.classList.add('rarity-glow'); if(cls==='monster-pop') img.style.animation='rarePop .9s ease-out'; }
+  setTimeout(()=>{card.classList.remove('monster-pop','shake','rarity-glow'); img.style.animation='';},1100);
+}
+function wrongGesture(action){
+  const expected=session.requiredGesture;
+  $('resultText').innerHTML=`방향이 달라요! <span class="reward-chip">${gestureLabel(expected)}으로 던져야 시도 인정</span>`;
+  $('resultText').style.color='#fecaca';
+  session.events.push({participant_id:session.participantId,assigned_experiment:experiment.assignedExperiment,block_index:session.blockIndex,block_label:session.blockLabel,condition:session.condition,phase:session.phase,timestamp:now(),elapsed_sec:+elapsed().toFixed(2),trial_index:session.totalThrows,event_type:'wrong_gesture',required_gesture:expected,action,gesture_correct:0,attempt_counted:0});
+  flashCombo('방향 확인!');
+  animateMonster('shake');
+  updatePatternGuideAfterWrong();
+  session.awaiting=true;
+}
+function updatePatternGuideAfterWrong(){
+  if(session.condition==='pattern'){
+    $('gestureGuide').textContent=session.requiredGesture==='right'?'오른쪽으로 커브볼! →':'위로 스와이프! ↑';
+  }
+}
+function handle(action){
+  if(!session||session.ended||session.locked||!session.awaiting||!action)return;
+
+  // 핵심 수정: 요구된 방향으로 스와이프했을 때만 '포획 시도'로 인정
+  if(action!==session.requiredGesture){
+    wrongGesture(action);
+    return;
+  }
+
+  session.awaiting=false;
+  animateThrow();
+  session.totalThrows++;
+  const trial=session.totalThrows;
+  const m=session.currentMonster;
+  const correct=true;
+  const isScheduledCatch=session.catchTrials.includes(trial);
+  let caught=false,nearMiss=false;
+
+  if(isScheduledCatch){
+    caught=true;
+    nearMiss=false;
+  }else{
+    caught=false;
+    // 더 자주 '아깝게' 느끼게 해서 간헐적 보상/near-miss를 강화
+    nearMiss=Math.random()<.42;
+  }
+
+  if(caught){
+    session.caughtCount++;
+    session.streak++;
+    session.collectionSet.add(m.id);
+  }else{
+    session.streak=0;
+  }
+  session.finalStreak=session.streak;
+
+  const ev={participant_id:session.participantId,assigned_experiment:experiment.assignedExperiment,block_index:session.blockIndex,block_label:session.blockLabel,condition:session.condition,phase:session.phase,timestamp:now(),elapsed_sec:+elapsed().toFixed(2),trial_index:trial,max_throws:MAX_THROWS,scheduled_catch_trial:isScheduledCatch?1:0,monster_id:m.id,monster_name:m.name,rarity:m.rarity,required_gesture:session.requiredGesture,action,gesture_correct:correct?1:0,attempt_counted:1,caught:caught?1:0,near_miss:nearMiss?1:0,caught_count:session.caughtCount,collection_count:session.collectionSet.size,current_streak:session.streak};
+  session.events.push(ev);
+
+  if(caught){
+    const remain=session.monstersPool.length-session.collectionSet.size;
+    setTimeout(()=>playBallShake(),60);
+    setTimeout(()=>{revealCaughtMonster(m);animateMonster('monster-pop')},140);
+    $('resultText').innerHTML=session.collectionSet.size===session.monstersPool.length
+      ? '포획 성공! 마지막 포켓몬 등장! <span class="reward-chip">도감 완성</span>'
+      : m.rarity==='RARE' ? `포획 성공! 희귀 포켓몬 등장! <span class="reward-chip">도감 ${session.collectionSet.size}/5</span><span class="reward-chip">보너스 연출</span>`
+      : `포획 성공! 포켓몬이 나타났다 <span class="reward-chip">도감 ${session.collectionSet.size}/5</span><span class="reward-chip">남은 포켓몬 ${remain}</span>`;
+    $('resultText').style.color='#dcfce7';
+    flashCombo(session.collectionSet.size===session.monstersPool.length?'도감 완성!':'잡았다!');
+  }else if(nearMiss){
+    setTimeout(()=>playBallShake(),160);
+    const msgs=['아깝게 놓쳤다!','거의 잡을 뻔했다!','한 번만 더 하면 될 것 같은데?','포켓볼이 흔들렸다!'];
+    $('resultText').innerHTML=`${msgs[Math.floor(Math.random()*msgs.length)]} <span class="reward-chip">Near miss</span>`;
+    $('resultText').style.color='#fde68a';
+    flashCombo('아깝다!');
+    animateMonster('shake');
+  }else{
+    $('resultText').innerHTML='포획 실패! <span class="reward-chip">다음 시도</span>';
+    $('resultText').style.color='#fecaca';
+    animateMonster('shake');
+  }
+
+  renderStats();
+  const holdDelay = caught ? (m.rarity==='RARE' ? 2400 : 1900) : (nearMiss ? 1200 : 1000);
+  if(session.collectionSet.size>=session.monstersPool.length||session.totalThrows>=MAX_THROWS){setTimeout(()=>finish(true),holdDelay);return}
+  if(session.condition==='friction'&&session.totalThrows%10===0){
+    setTimeout(()=>{if(session&& !session.ended) startFrictionPause()},holdDelay)
+  }else setTimeout(nextMonster,holdDelay)
+}
+function finish(auto=false){if(!session||session.ended)return;session.ended=true;session.endedAt=now();session.locked=false;clearFrictionTimers();$('frictionOverlay').classList.add('hidden');clearInterval(timer);$('gameScreen').classList.add('hidden');$('surveyTitle').textContent=`${session.blockIndex}단계 종료 후 설문`;if(auto){$('surveyTitle').textContent=`${session.blockIndex}단계 진행 후 설문`}if(session.phase==='experiment'){hideCapturedDexPreview();renderTotalDexResult();$('totalDexModal').classList.remove('hidden')}else{hideCapturedDexPreview();$('surveyModal').classList.remove('hidden')}}
+function blockSummary(){const capturedIds=Array.from(session.collectionSet);return{participant_id:session.participantId,assigned_experiment:experiment.assignedExperiment,block_index:session.blockIndex,block_label:session.blockLabel,condition:session.condition,phase:session.phase,total_time_sec:+elapsed().toFixed(2),max_throws:MAX_THROWS,total_throws:session.totalThrows,caught_count:session.caughtCount,collection_count:session.collectionSet.size,captured_ids:capturedIds,captured_names:session.monstersPool.filter(m=>session.collectionSet.has(m.id)).map(m=>m.name),all_monsters_caught:session.collectionSet.size>=session.monstersPool.length?1:0,fifth_catch_trial:session.collectionSet.size>=5?30:null,early_exit_clicks:session.earlyExitClicks,final_streak:session.finalStreak,started_at:session.startedAt,ended_at:session.endedAt,survey:session.survey,events_count:session.events.length}}
+function saveCurrentBlock(){const s=blockSummary();experiment.blockSummaries.push(s);experiment.allEvents.push(...session.events)}
+function showTransition(){const assigned=experiment.assignedExperiment;$('surveyModal').classList.add('hidden');$('assignedText').innerHTML=`랜덤 배정된 2단계는 <b>${names[assigned]}</b> 입니다.<br>준비가 되면 다음 단계를 시작해 주세요.`;$('conditionDiff').innerHTML=experimentalDiffHtml(assigned);$('transitionModal').classList.remove('hidden')}
+function getStoredParticipantResults(){
+  try{return JSON.parse(localStorage.getItem(RESULTS_STORAGE_KEY)||'[]')}catch(e){return []}
+}
+function saveParticipantResultLocal(row){
+  const rows=getStoredParticipantResults();
+  rows.push(row);
+  localStorage.setItem(RESULTS_STORAGE_KEY,JSON.stringify(rows));
+  return rows.length;
+}
+function buildParticipantResultRow(){
+  const s1=experiment.blockSummaries[0]||{};
+  const s2=experiment.blockSummaries[1]||{};
+  const stage2Owned=EXPERIMENT_MONSTERS.filter(m=>(s2.captured_ids||[]).includes(m.id));
+  return {
+    completed_at:new Date().toISOString(),
+    participant_id:experiment.participantId,
+    order_label:`1단계 → 2단계 (${names[experiment.assignedExperiment]})`,
+    stage2_condition:names[s2.condition]||'',
+    stage1_survey_perceived_time_min:s1.survey?.perceived_time_min??'',
+    stage1_survey_perceived_throws:s1.survey?.perceived_throws??'',
+    stage1_survey_easy_to_stop:s1.survey?.easy_to_stop??'',
+    stage2_survey_perceived_time_min:s2.survey?.perceived_time_min??'',
+    stage2_survey_perceived_throws:s2.survey?.perceived_throws??'',
+    stage2_survey_easy_to_stop:s2.survey?.easy_to_stop??'',
+    stage1_total_time_sec:s1.total_time_sec??'',
+    stage1_total_throws:s1.total_throws??'',
+    stage1_max_throws:s1.max_throws??'',
+    stage1_caught_count:s1.caught_count??'',
+    stage1_collection_count:s1.collection_count??'',
+    stage1_collection_total:5,
+    stage1_fifth_catch_trial:s1.fifth_catch_trial??'',
+    stage2_total_time_sec:s2.total_time_sec??'',
+    stage2_total_throws:s2.total_throws??'',
+    stage2_max_throws:s2.max_throws??'',
+    stage2_caught_count:s2.caught_count??'',
+    stage2_collection_count:s2.collection_count??'',
+    stage2_collection_total:5,
+    stage2_fifth_catch_trial:s2.fifth_catch_trial??'',
+    stage2_captured_ids:stage2Owned.map(m=>m.id).join('|'),
+    stage2_captured_names:stage2Owned.map(m=>m.name).join('|'),
+    total_event_logs:experiment.allEvents.length
+  };
+}
+function postParticipantResult(row){
+  if(!CONFIG.DATA_ENDPOINT){return Promise.resolve('local_only')}
+  return fetch(CONFIG.DATA_ENDPOINT,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(row)})
+    .then(()=> 'remote_sent')
+    .catch(()=> 'remote_failed');
+}
+function showFinalSummary(){
+  experiment.endedAt=now();
+  const c=experiment.blockSummaries[0],e=experiment.blockSummaries[1];
+  const owned=EXPERIMENT_MONSTERS.filter(m=>(e.captured_ids||[]).includes(m.id));
+  let savedCount=getStoredParticipantResults().length;
+  let row=null;
+
+  $('surveyModal').classList.add('hidden');
+  $('totalDexModal').classList.add('hidden');
+  $('completionScreen').classList.remove('hidden');
+  $('participantSaveStatus').textContent='데이터 저장 및 전송 중...';
+
+  if(!finalResultSaved){
+    row=buildParticipantResultRow();
+    savedCount=saveParticipantResultLocal(row);
+    finalResultSaved=true;
+    postParticipantResult(row).then(status=>{
+      const msg=status==='remote_sent'
+        ? `데이터 전송 완료: 이 브라우저 누적 ${savedCount}명 / 온라인 시트 전송 완료`
+        : status==='local_only'
+          ? `로컬 저장 완료: 이 브라우저 누적 ${savedCount}명. 온라인 누적 저장은 config.js에 DATA_ENDPOINT를 넣으면 활성화됩니다.`
+          : `로컬 저장 완료: 이 브라우저 누적 ${savedCount}명. 온라인 전송은 실패했지만 로컬에는 저장되었습니다.`;
+      $('participantSaveStatus').textContent=msg;
+    });
+  }
+
+  $('participantSummaryBox').innerHTML=`<b>전체 실험 완료</b><br>참가자 ID: ${experiment.participantId}<br>수행 순서: 1단계 → 2단계 (${names[experiment.assignedExperiment]})<br><br><b>1단계</b><br>총 시간: ${c.total_time_sec}초<br>포획 시도: ${c.total_throws}/${c.max_throws}<br>포획 성공: ${c.caught_count}<br>도감 완성: ${c.collection_count}/5<br>5번째 포획 시점: ${c.fifth_catch_trial}회<br><br><b>2단계</b><br>조건: ${names[e.condition]}<br>총 시간: ${e.total_time_sec}초<br>포획 시도: ${e.total_throws}/${e.max_throws}<br>포획 성공: ${e.caught_count}<br>도감 완성: ${e.collection_count}/5<br>5번째 포획 시점: ${e.fifth_catch_trial}회<br><br><b>2단계 획득 도감</b><div class="dex-grid" style="margin-top:8px">${owned.map(m=>`<div class="dex-item"><img src="${m.img}" alt="${m.name}"><div class="dex-item-name">${m.name}</div></div>`).join('')}</div><br>전체 이벤트 로그 수: ${experiment.allEvents.length}`;
+  if(!row) $('participantSaveStatus').textContent=`결과 저장 완료: 이 브라우저 누적 ${savedCount}명`;
+}
+function download(filename,content,type){const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename;a.click();URL.revokeObjectURL(url)}
+function csvEscape(v){return`"${String(v??'').replaceAll('"','""')}"`}
+function eventsCsv(){if(!experiment.allEvents.length)return'no_data\n';const h=Object.keys(experiment.allEvents[0]);return[h.join(','),...experiment.allEvents.map(e=>h.map(k=>csvEscape(e[k])).join(','))].join('\n')}
+function summariesCsv(){if(!experiment.blockSummaries.length)return'no_data\n';const flat=experiment.blockSummaries.map(s=>({...s,survey:JSON.stringify(s.survey)}));const h=Object.keys(flat[0]);return[h.join(','),...flat.map(e=>h.map(k=>csvEscape(e[k])).join(','))].join('\n')}
+$('startForm').addEventListener('submit',e=>{e.preventDefault();initExperiment($('participantId').value.trim()||'P01');startBlock()});
+$('endBtn').onclick=()=>{if(!session||session.ended)return;session.earlyExitClicks++;session.events.push({participant_id:session.participantId,assigned_experiment:experiment.assignedExperiment,block_index:session.blockIndex,block_label:session.blockLabel,condition:session.condition,phase:session.phase,timestamp:now(),elapsed_sec:+elapsed().toFixed(2),trial_index:session.totalThrows,event_type:'end_button_click'});finish(false)};
+$('nextBlockBtn').onclick=()=>{experiment.currentBlockIndex=1;startBlock()};
+$('goSurveyBtn').onclick=()=>showSurveyAfterDexResult();
+$('surveyForm').addEventListener('submit',e=>{e.preventDefault();session.survey={perceived_time_min:+$('perceivedTime').value,perceived_throws:+$('perceivedThrows').value,easy_to_stop:$('easyToStop').value};saveCurrentBlock();$('surveyForm').reset();if(experiment.currentBlockIndex===0)showTransition();else showFinalSummary()});
+$('closeExperimentBtn').onclick=()=>{window.close();setTimeout(()=>{$('closeHelpText').textContent='브라우저 정책상 자동으로 닫히지 않을 수 있습니다. 탭을 직접 닫아 주세요.'},300)};
+$('playArea').addEventListener('pointerdown',e=>{startPt={x:e.clientX,y:e.clientY}});$('playArea').addEventListener('pointerup',e=>{if(!startPt)return;handle(direction(startPt,{x:e.clientX,y:e.clientY}));startPt=null});$('playArea').addEventListener('pointerleave',()=>startPt=null);
+</script></body></html>
